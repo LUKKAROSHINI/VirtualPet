@@ -1,0 +1,72 @@
+<!DOCTYPE HTML>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to My Virtual Pet</title>
+
+    <!-- Google Fonts for cuter font style -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+
+    <style>
+        /* Page styling */
+        body {
+            font-family: 'Poppins', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #fce4ec, #f8bbd0);
+            color: #444;
+        }
+
+        h1 {
+            font-size: 3rem;
+            color: #ff6f61;
+        }
+
+        p {
+            font-size: 1.2rem;
+            margin: 10px;
+            color: #555;
+        }
+
+        /* Button styling */
+        button {
+            padding: 14px 28px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            background-color: #ff6f61;
+            color: white;
+            border: none;
+            border-radius: 50px;
+            transition: background-color 0.3s, transform 0.2s;
+            margin: 10px;
+            box-shadow: 0px 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        button:hover {
+            background-color: #ff483e;
+            transform: scale(1.05);
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>Welcome to My Virtual Pet</h1>
+    <p>Are you ready to meet your adorable virtual pet?</p>
+
+    <!-- Button to load the virtual pet viewer -->
+    <button onclick="loadVirtualPet()">Load My Virtual Pet</button>
+
+    <script>
+        function loadVirtualPet() {
+            window.location.href = 'index.html'; // Navigate to index.html
+        }
+    </script>
+</body>
+</html>

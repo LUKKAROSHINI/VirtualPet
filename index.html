@@ -1,0 +1,320 @@
+<!DOCTYPE HTML>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Virtual Pet Viewer with Animation Controls</title>
+
+    <!-- Sketchfab Viewer API script -->
+    <script type="text/javascript" src="https://static.sketchfab.com/api/sketchfab-viewer-1.12.1.js"></script>
+
+    <!-- Google Fonts for cuter font style -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+
+    <style>
+        /* Page styling */
+        body {
+            font-family: 'Poppins', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #fce4ec, #f8bbd0);
+            color: #444;
+        }
+
+        h1 {
+            font-size: 3rem;
+            color: #ff6f61;
+        }
+
+        p {
+            font-size: 1.2rem;
+            margin: 10px;
+            color: #555;
+        }
+
+        /* Button styling */
+        button {
+            padding: 18px 36px; /* Increased padding */
+            font-size: 20px; /* Increased font size */
+            font-weight: 600;
+            cursor: pointer;
+            background-color: #ff6f61;
+            color: white;
+            border: none;
+            border-radius: 50px;
+            transition: background-color 0.3s, transform 0.2s;
+            margin: 10px;
+            box-shadow: 0px 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        button:hover {
+            background-color: #ff483e;
+            transform: scale(1.05);
+        }
+
+        /* Progress bar styling */
+        .progress-container {
+            width: 100%;
+            background: #eee;
+            border-radius: 20px;
+            margin: 10px 0;
+            overflow: hidden;
+            box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .progress {
+            height: 30px;
+            border-radius: 25px;
+            background: #ff6f61;
+            transition: width 0.5s;
+            width: 0; /* Start with 0 width */
+        }
+
+        /* Container for animation controls */
+        .controls {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+            flex-wrap: wrap;
+            gap: 10px; /* Add space between buttons */
+        }
+
+        /* Iframe styling */
+        iframe {
+            width: 800px; /* Increased width */
+            height: 600px; /* Increased height */
+            margin-top: 20px;
+            border: 3px solid #ff6f61;
+            border-radius: 30px;
+            display: block;
+            box-shadow: 0px 10px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        /* Status display */
+        #status {
+            margin-top: 20px;
+            font-weight: 600;
+            font-size: 1.3rem;
+            color: #444;
+            border-radius: 15px;
+            padding: 12px;
+            background-color: #ffe0b2;
+            box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Hidden elements */
+        .hidden {
+            visibility: hidden;
+            height: 0;
+            width: 0;
+            opacity: 0; /* Make it invisible */
+            transition: opacity 0.5s ease-in-out; /* Smooth transition */
+        }
+
+        /* Additional interaction options */
+        .interaction-options {
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 10px; /* Add space between buttons */
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>My Cute Virtual Pet</h1>
+    <p>Meet your adorable virtual pet!</p>
+
+    <div class="container">
+        <!-- Empty iframe hidden by default -->
+        <iframe class="hidden" id="api-frame" sandbox="allow-scripts allow-same-origin allow-popups allow-forms" 
+            allow="autoplay; fullscreen; xr-spatial-tracking" 
+            xr-spatial-tracking execution-while-out-of-viewport execution-while-not-rendered 
+            web-share allowfullscreen mozallowfullscreen="true" webkitallowfullscreen="true"></iframe>
+
+        <!-- Progress Bars -->
+        <div class="progress-container hidden" id="hunger-bar-container">
+            <div class="progress" id="hunger-bar">Hunger</div>
+        </div>
+        <div class="progress-container hidden" id="happiness-bar-container">
+            <div class="progress" id="happiness-bar">Happiness</div>
+        </div>
+        <div class="progress-container hidden" id="cleanliness-bar-container">
+            <div class="progress" id="cleanliness-bar">Cleanliness</div>
+        </div>
+
+        <!-- Animation control buttons -->
+        <div class="controls hidden" id="controls">
+            <button onclick="sleepPet()">Sleep</button>
+            <button onclick="RollPet()">Roll</button>
+            <button onclick="ShakePet()">Shake Hand</button>
+            <button onclick="SitPet()">Sit</button>
+        </div>
+
+        <!-- Additional interaction options -->
+        <div class="interaction-options hidden" id="interaction-options">
+            <button onclick="feedPet()">Feed</button>
+            <button onclick="playWithPet()">Play</button>
+            <button onclick="cleanPet()">Clean</button>
+        </div>
+
+        <!-- Pet status display -->
+        <div id="status" class="hidden">Pet Status: Healthy</div> <!-- Removed score display -->
+    </div>
+
+    <script type="text/javascript">
+        var iframe = document.getElementById('api-frame');
+        var uid = '8d1aa170cf8c41e7aeb75b7b1d70bc46'; // Replace with your model's UID
+        var client = new Sketchfab(iframe); // Initialize Sketchfab client
+        var api; // Will hold the Sketchfab API instance
+        var petStatus = "Healthy"; // Initial pet status
+
+        // Initial values for the progress bars
+        var hunger = 0; // Hunger level
+        var happiness = 0; // Happiness level
+        var cleanliness = 0; // Cleanliness level
+
+        // Load the virtual pet model automatically when the page loads
+        loadVirtualPet();
+
+        function loadVirtualPet() {
+            client.init(uid, {
+                success: function onSuccess(apiInstance) {
+                    console.log('Success: Virtual Pet model loaded');
+                    api = apiInstance;
+                    api.start();
+
+                    // Show the controls and iframe
+                    document.getElementById('controls').classList.remove('hidden');
+                    document.getElementById('interaction-options').classList.remove('hidden');
+                    document.getElementById('hunger-bar-container').classList.remove('hidden');
+                    document.getElementById('happiness-bar-container').classList.remove('hidden');
+                    document.getElementById('cleanliness-bar-container').classList.remove('hidden');
+                    iframe.classList.remove('hidden');
+                    document.getElementById('status').classList.remove('hidden');
+
+                    // Set the first animation as the default and play it
+                    api.getAnimations(function(err, animations) {
+                        if (!err && animations.length > 0) {
+                            var firstAnimationUID = animations[0][0];
+                            api.setCurrentAnimationByUID(firstAnimationUID, function(err) {
+                                if (!err) {
+                                    api.play(function(err) {
+                                        if (!err) {
+                                            console.log('Default animation playing');
+                                        }
+                                    });
+                                }
+                            });
+                        }
+                    });
+
+                    api.addEventListener('viewerready', function() {
+                        console.log('Viewer is ready');
+                    });
+                },
+                error: function onError() {
+                    console.log('Error loading viewer');
+                }
+            });
+        }
+
+        // Functions for pet interactions
+        function sleepPet() {
+            petStatus = "Sleeping";
+            updateStatus();
+            api.getAnimations(function(err, animations) {
+                if (!err && animations.length > 0) {
+                    api.setCurrentAnimationByUID(animations[0][0], function(err) { // Assuming the first animation is 'Sleep'
+                        if (!err) {
+                            api.play();
+                        }
+                    });
+                }
+            });
+        }
+
+        function RollPet() {
+            petStatus = "Rolling";
+            updateStatus();
+            api.getAnimations(function(err, animations) {
+                if (!err && animations.length > 1) {
+                    api.setCurrentAnimationByUID(animations[1][0], function(err) { // Assuming the second animation is 'Roll'
+                        if (!err) {
+                            api.play();
+                        }
+                    });
+                }
+            });
+        }
+
+        function ShakePet() {
+            petStatus = "Shaking Hand";
+            updateStatus();
+            api.getAnimations(function(err, animations) {
+                if (!err && animations.length > 2) {
+                    api.setCurrentAnimationByUID(animations[2][0], function(err) { // Assuming the third animation is 'Shake'
+                        if (!err) {
+                            api.play();
+                        }
+                    });
+                }
+            });
+        }
+
+        function SitPet() {
+            petStatus = "Sitting";
+            updateStatus();
+            api.getAnimations(function(err, animations) {
+                if (!err && animations.length > 3) {
+                    api.setCurrentAnimationByUID(animations[3][0], function(err) { // Assuming the fourth animation is 'Sit'
+                        if (!err) {
+                            api.play();
+                        }
+                    });
+                }
+            });
+        }
+
+        function feedPet() {
+            if (hunger < 100) {
+                hunger += 20; // Increase hunger level
+                updateProgressBar('hunger-bar', hunger);
+                updateStatus();
+            }
+        }
+
+        function playWithPet() {
+            if (happiness < 100) {
+                happiness += 20; // Increase happiness level
+                updateProgressBar('happiness-bar', happiness);
+                updateStatus();
+            }
+        }
+
+        function cleanPet() {
+            if (cleanliness < 100) {
+                cleanliness += 20; // Increase cleanliness level
+                updateProgressBar('cleanliness-bar', cleanliness);
+                updateStatus();
+            }
+        }
+
+        function updateProgressBar(barId, value) {
+            var progressBar = document.getElementById(barId);
+            progressBar.style.width = value + '%';
+            progressBar.innerText = barId.split('-')[0].charAt(0).toUpperCase() + barId.split('-')[0].slice(1) + ': ' + value + '%'; // Update bar text
+        }
+
+        function updateStatus() {
+            document.getElementById('status').innerText = "Pet Status: " + petStatus; // Update pet status
+        }
+    </script>
+</body>
+</html>
